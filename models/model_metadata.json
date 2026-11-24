@@ -1,0 +1,252 @@
+{
+  "denial_classification": {
+    "algorithm": "XGBoost (binary:logistic)",
+    "target": "is_denied (pending excluded)",
+    "best_params": {
+      "clf__subsample": 0.9,
+      "clf__scale_pos_weight": 3.46,
+      "clf__reg_lambda": 1.5,
+      "clf__reg_alpha": 0,
+      "clf__n_estimators": 200,
+      "clf__min_child_weight": 3,
+      "clf__max_depth": 5,
+      "clf__learning_rate": 0.03,
+      "clf__gamma": 0.3,
+      "clf__colsample_bytree": 0.6
+    },
+    "cv_best_roc_auc": 0.9854,
+    "metrics": {
+      "accuracy": 0.9168,
+      "precision": 0.7859,
+      "recall": 1.0,
+      "f1": 0.8801,
+      "roc_auc": 0.9857,
+      "pr_auc": 0.9694,
+      "confusion_matrix": [
+        [
+          10217,
+          1390
+        ],
+        [
+          0,
+          5102
+        ]
+      ],
+      "threshold": 0.5,
+      "test_rows": 16709
+    },
+    "risk_bands": {
+      "low_max": 0.33,
+      "medium_max": 0.66
+    },
+    "features_used": [
+      "documentation_completeness",
+      "cpt_code",
+      "primary_icd10_dx",
+      "claim_amount_usd",
+      "auth_status"
+    ],
+    "top_features": [
+      "num__documentation_completeness",
+      "cat__auth_status_not_obtained",
+      "cat__auth_status_not_required",
+      "cat__auth_status_obtained",
+      "cat__cpt_code_27447",
+      "cat__cpt_code_74177",
+      "cat__cpt_code_93454",
+      "cat__cpt_code_29827",
+      "cat__cpt_code_99291",
+      "cat__cpt_code_38220",
+      "cat__cpt_code_99215",
+      "cat__cpt_code_95886",
+      "cat__primary_icd10_dx_J45.41",
+      "cat__cpt_code_99233",
+      "cat__primary_icd10_dx_C18.9"
+    ],
+    "n_train": 78081,
+    "n_test": 16709
+  },
+  "recovery_regression": {
+    "algorithm": "XGBoost Regressor (reg:squarederror)",
+    "target": "estimated_recovery_usd",
+    "target_note": "The dataset has no paid/reimbursement amount. This model predicts expected RECOVERY for denied claims - the only real monetary label.",
+    "best_params": {
+      "reg__subsample": 0.7,
+      "reg__reg_lambda": 2,
+      "reg__reg_alpha": 1,
+      "reg__n_estimators": 600,
+      "reg__min_child_weight": 5,
+      "reg__max_depth": 4,
+      "reg__learning_rate": 0.03,
+      "reg__gamma": 0,
+      "reg__colsample_bytree": 0.6
+    },
+    "cv_best_rmse": 1110.42,
+    "metrics": {
+      "mae": 394.92,
+      "rmse": 1013.63,
+      "r2": 0.7847,
+      "test_rows": 5102,
+      "target_mean": 961.82
+    },
+    "features_used": [
+      "documentation_completeness",
+      "cpt_code",
+      "primary_icd10_dx",
+      "claim_amount_usd",
+      "auth_status"
+    ],
+    "top_features": [
+      "num__claim_amount_usd",
+      "cat__cpt_code_27447",
+      "cat__cpt_code_99213",
+      "cat__cpt_code_59400",
+      "cat__cpt_code_93454",
+      "cat__cpt_code_29827",
+      "cat__cpt_code_99214",
+      "cat__cpt_code_58150",
+      "cat__auth_status_obtained",
+      "cat__auth_status_not_required",
+      "num__documentation_completeness",
+      "cat__primary_icd10_dx_M17.11",
+      "cat__auth_status_not_obtained",
+      "cat__primary_icd10_dx_C18.9",
+      "cat__primary_icd10_dx_F20.9"
+    ],
+    "n_train": 23597,
+    "n_test": 5102
+  },
+  "denial_reason": {
+    "algorithm": "XGBoost (multi:softprob)",
+    "target": "denial_category",
+    "best_params": {
+      "clf__subsample": 1.0,
+      "clf__reg_lambda": 2,
+      "clf__reg_alpha": 1,
+      "clf__n_estimators": 300,
+      "clf__min_child_weight": 3,
+      "clf__max_depth": 8,
+      "clf__learning_rate": 0.2,
+      "clf__gamma": 0,
+      "clf__colsample_bytree": 0.8
+    },
+    "cv_best_macro_f1": 0.209,
+    "metrics": {
+      "accuracy": 0.3503,
+      "precision_macro": 0.2215,
+      "recall_macro": 0.2266,
+      "macro_f1": 0.2057,
+      "weighted_f1": 0.3041,
+      "confusion_matrix": [
+        [
+          507,
+          3,
+          204,
+          6,
+          20,
+          203,
+          2
+        ],
+        [
+          34,
+          0,
+          60,
+          4,
+          11,
+          140,
+          2
+        ],
+        [
+          217,
+          4,
+          412,
+          18,
+          46,
+          429,
+          6
+        ],
+        [
+          53,
+          2,
+          74,
+          13,
+          28,
+          224,
+          9
+        ],
+        [
+          73,
+          8,
+          122,
+          15,
+          35,
+          331,
+          11
+        ],
+        [
+          185,
+          11,
+          286,
+          25,
+          73,
+          814,
+          14
+        ],
+        [
+          47,
+          2,
+          72,
+          8,
+          21,
+          212,
+          6
+        ]
+      ],
+      "classes": [
+        "auth_missing",
+        "bundling",
+        "coding_error",
+        "duplicate",
+        "eligibility",
+        "medical_necessity",
+        "timely_filing"
+      ],
+      "test_rows": 5102
+    },
+    "classes": [
+      "auth_missing",
+      "bundling",
+      "coding_error",
+      "duplicate",
+      "eligibility",
+      "medical_necessity",
+      "timely_filing"
+    ],
+    "features_used": [
+      "documentation_completeness",
+      "cpt_code",
+      "primary_icd10_dx",
+      "claim_amount_usd",
+      "auth_status"
+    ],
+    "top_features": [
+      "cat__auth_status_not_obtained",
+      "cat__auth_status_obtained",
+      "cat__auth_status_not_required",
+      "num__documentation_completeness",
+      "cat__primary_icd10_dx_S72.001",
+      "cat__primary_icd10_dx_A41.9",
+      "cat__primary_icd10_dx_I10",
+      "cat__primary_icd10_dx_M54.5",
+      "cat__primary_icd10_dx_Z34.00",
+      "cat__cpt_code_95886",
+      "cat__primary_icd10_dx_J18.9",
+      "cat__primary_icd10_dx_C34.10",
+      "cat__primary_icd10_dx_I50.9",
+      "cat__primary_icd10_dx_I25.10",
+      "cat__primary_icd10_dx_J44.1"
+    ],
+    "n_train": 23597,
+    "n_test": 5102
+  }
+}

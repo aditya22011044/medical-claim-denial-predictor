@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DenialIQ &middot; AI Medical Claim Denial Predictor</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236366f1'/%3E%3Cpath d='M9 22V10h4.5a6 6 0 0 1 0 12H9Zm3-2.6h1.4a3.4 3.4 0 0 0 0-6.8H12v6.8Z' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- ======================= SIDEBAR ======================= -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">D</div>
+        <div class="brand-text">
+          <span class="brand-name">DenialIQ</span>
+          <span class="brand-sub">Claim Denial Predictor</span>
+        </div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <button class="nav-item active" data-view="analyze">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 10h10v4H4zM4 16h16v4H4z"/></svg>
+          <span>Analyze Claim</span>
+        </button>
+        <button class="nav-item" data-view="dashboard">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="payers">
+          <svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Zm-6 9v6l6 3 6-3v-6l-6 3-6-3Z"/></svg>
+          <span>Payer Intelligence</span>
+        </button>
+        <button class="nav-item" data-view="models">
+          <svg viewBox="0 0 24 24"><path d="M3 20h18v-2H3v2Zm2-4h3V8H5v8Zm5 0h3V4h-3v12Zm5 0h3v-6h-3v6Z"/></svg>
+          <span>Models &amp; Features</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="foot-title">Feature-selected model</div>
+        <div class="foot-note">Only the top 5 claim attributes drive every prediction.</div>
+        <div class="foot-chips" id="foot-chips"></div>
+      </div>
+    </aside>
+
+    <!-- ======================= MAIN ======================= -->
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-titles">
+          <h1 id="page-title">Analyze Claim</h1>
+          <p id="page-sub">Enter the 5 key claim attributes &rarr; get denial risk, recovery and an AI recommendation.</p>
+        </div>
+        <div class="status-pills">
+          <span class="pill" id="pill-models"><i class="dot"></i> Models</span>
+          <span class="pill" id="pill-llm"><i class="dot"></i> AI Engine</span>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ================= ANALYZE ================= -->
+        <section class="view active" id="view-analyze">
+          <div class="analyze-grid">
+            <!-- form -->
+            <div class="card form-card">
+              <div class="card-head">
+                <h2>Claim Inputs</h2>
+                <span class="tag">5 model features</span>
+              </div>
+
+              <form id="claim-form" autocomplete="off">
+                <div class="field">
+                  <label for="documentation_completeness">
+                    Documentation Completeness
+                    <span class="hint">strongest denial driver</span>
+                  </label>
+                  <div class="slider-row">
+                    <input type="range" id="documentation_completeness" name="documentation_completeness"
+                           min="0" max="1" step="0.01" value="0.45" />
+                    <output id="doc-out" class="slider-out">0.45</output>
+                  </div>
+                  <div class="meter"><div class="meter-fill" id="doc-meter"></div></div>
+                </div>
+
+                <div class="field">
+                  <label for="cpt_code">CPT Procedure Code</label>
+                  <input list="cpt-list" id="cpt_code" name="cpt_code" placeholder="e.g. 93454" required />
+                  <datalist id="cpt-list"></datalist>
+                </div>
+
+                <div class="field">
+                  <label for="primary_icd10_dx">Primary ICD-10 Diagnosis</label>
+                  <input list="icd-list" id="primary_icd10_dx" name="primary_icd10_dx" placeholder="e.g. I48.91" required />
+                  <datalist id="icd-list"></datalist>
+                </div>
+
+                <div class="field">
+                  <label for="claim_amount_usd">Billed Amount (USD)</label>
+                  <div class="money-input">
+                    <span>$</span>
+                    <input type="number" id="claim_amount_usd" name="claim_amount_usd"
+                           min="1" step="0.01" value="1500" required />
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Prior-Authorisation Status</label>
+                  <div class="segmented" id="auth-seg" role="radiogroup">
+                    <button type="button" data-val="not_required">Not required</button>
+                    <button type="button" data-val="obtained">Obtained</button>
+                    <button type="button" data-val="not_obtained" class="active">Not obtained</button>
+                    <button type="button" data-val="unknown">Unknown</button>
+                  </div>
+                </div>
+
+                <details class="optional">
+                  <summary>Optional context (not used by the models)</summary>
+                  <div class="field">
+                    <label for="payer_type">Payer Type</label>
+                    <select id="payer_type" name="payer_type">
+                      <option value="">— none —</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="claim_submission_date">Submission Date</label>
+                    <input type="date" id="claim_submission_date" name="claim_submission_date" />
+                  </div>
+                </details>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn primary" id="analyze-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5Zm0 2.3 6.5 3.6L12 11.5 5.5 7.9 12 4.3ZM5 9.6l6 3.3v6.5l-6-3.3V9.6Zm8 9.8v-6.5l6-3.3v6.5l-6 3.3Z"/></svg>
+                    Analyze Claim
+                  </button>
+                  <button type="button" class="btn ghost" id="example-btn">Load example</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- results -->
+            <div class="results" id="results">
+              <div class="card empty-state" id="empty-state">
+                <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z"/></svg>
+                <h3>Ready to analyze</h3>
+                <p>Fill in the five model features on the left and run the analysis to see denial risk,
+                   expected recovery and an AI-generated recommendation.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DASHBOARD ================= -->
+        <section class="view" id="view-dashboard">
+          <div class="kpi-grid" id="dash-kpis"></div>
+          <div class="dash-grid">
+            <div class="card"><div class="card-head"><h2>Claim Outcomes</h2></div><div id="chart-outcomes" class="chart"></div></div>
+            <div class="card"><div class="card-head"><h2>Denial Reasons</h2></div><div id="chart-reasons" class="chart"></div></div>
+            <div class="card wide"><div class="card-head"><h2>Monthly Claims vs Denials</h2></div><div id="chart-trend" class="chart"></div></div>
+            <div class="card"><div class="card-head"><h2>Payer Denial Rates</h2></div><div id="chart-payers" class="chart"></div></div>
+            <div class="card"><div class="card-head"><h2>Top Denial Codes</h2></div><div id="chart-codes" class="chart"></div></div>
+          </div>
+        </section>
+
+        <!-- ================= PAYERS ================= -->
+        <section class="view" id="view-payers">
+          <div class="card payer-toolbar">
+            <label for="payer-select">Select payer</label>
+            <select id="payer-select"></select>
+          </div>
+          <div id="payer-body"></div>
+        </section>
+
+        <!-- ================= MODELS ================= -->
+        <section class="view" id="view-models">
+          <div class="card feature-card">
+            <div class="card-head">
+              <h2>Feature Selection</h2>
+              <span class="tag" id="fs-method">—</span>
+            </div>
+            <p class="muted" id="fs-note"></p>
+            <div id="feature-ranking" class="chart"></div>
+          </div>
+          <div class="model-grid" id="model-grid"></div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

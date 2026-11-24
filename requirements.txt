@@ -1,0 +1,30 @@
+# Core data / ML
+pandas
+numpy
+scikit-learn
+xgboost
+scipy
+joblib
+
+# Visualisation
+matplotlib
+seaborn
+plotly
+
+# API backend
+fastapi
+uvicorn[standard]
+pydantic
+requests
+
+# LLM
+openai
+python-dotenv
+
+# Frontend (served as static HTML/CSS/JS by FastAPI - no extra packages needed)
+
+# Notebooks (only needed to run the .ipynb files)
+jupyter
+nbformat
+nbconvert
+ipykernel

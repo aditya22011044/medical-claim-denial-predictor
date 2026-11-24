@@ -1,0 +1,7 @@
+payer_type,claims,denied,paid,partial_pay,pending,avg_claim_amount,avg_recovery_usd,denial_rate,approval_rate,denial_reason_code,denial_category
+Commercial_EPO,8472,2346,4405,1122,599,2463.15,1125.39,0.28,0.65,CO-16,medical_necessity
+Commercial_HMO,15458,4324,8030,2017,1087,2407.83,1172.87,0.28,0.65,CO-11,medical_necessity
+Commercial_PPO,30016,8338,15651,3876,2151,2625.38,1261.54,0.28,0.65,CO-11,medical_necessity
+Medicaid_Managed,17996,5130,9300,2260,1306,1710.25,568.91,0.29,0.64,CO-11,medical_necessity
+Medicare_Advantage,21758,6148,11335,2729,1546,2104.62,843.54,0.28,0.65,CO-11,medical_necessity
+Medicare_FFS,26300,7378,13658,3465,1799,2029.21,836.32,0.28,0.65,CO-11,medical_necessity

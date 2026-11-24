@@ -1,0 +1,107 @@
+{
+  "categorical": [
+    "payer_type",
+    "provider_specialty",
+    "place_of_service_code",
+    "cpt_code",
+    "modifier",
+    "primary_icd10_dx",
+    "claim_quarter",
+    "auth_status"
+  ],
+  "numeric": [
+    "claim_year",
+    "claim_month",
+    "claim_dayofweek",
+    "secondary_dx_count",
+    "documentation_completeness",
+    "claim_amount_usd",
+    "log_claim_amount",
+    "has_secondary_dx",
+    "has_modifier",
+    "prior_auth_required_int",
+    "pa_gap",
+    "doc_low",
+    "payer_denial_rate_hist",
+    "payer_cpt_denial_rate_hist",
+    "payer_hist_claims",
+    "payer_cpt_hist_claims",
+    "payer_avg_amount_hist",
+    "payer_rule_denial_rate",
+    "payer_rule_auth_lead_time_days",
+    "payer_rule_turnaround_days",
+    "payer_rule_timely_filing_days"
+  ],
+  "features": [
+    "payer_type",
+    "provider_specialty",
+    "place_of_service_code",
+    "cpt_code",
+    "modifier",
+    "primary_icd10_dx",
+    "claim_quarter",
+    "auth_status",
+    "claim_year",
+    "claim_month",
+    "claim_dayofweek",
+    "secondary_dx_count",
+    "documentation_completeness",
+    "claim_amount_usd",
+    "log_claim_amount",
+    "has_secondary_dx",
+    "has_modifier",
+    "prior_auth_required_int",
+    "pa_gap",
+    "doc_low",
+    "payer_denial_rate_hist",
+    "payer_cpt_denial_rate_hist",
+    "payer_hist_claims",
+    "payer_cpt_hist_claims",
+    "payer_avg_amount_hist",
+    "payer_rule_denial_rate",
+    "payer_rule_auth_lead_time_days",
+    "payer_rule_turnaround_days",
+    "payer_rule_timely_filing_days"
+  ],
+  "selected_features": [
+    "documentation_completeness",
+    "cpt_code",
+    "primary_icd10_dx",
+    "claim_amount_usd",
+    "auth_status"
+  ],
+  "selected_categorical": [
+    "cpt_code",
+    "primary_icd10_dx",
+    "auth_status"
+  ],
+  "selected_numeric": [
+    "documentation_completeness",
+    "claim_amount_usd"
+  ],
+  "feature_selection": {
+    "method": "multi-model XGBoost gain importance over enterable features",
+    "ranking": {
+      "documentation_completeness": 26.607,
+      "primary_icd10_dx": 20.688,
+      "cpt_code": 19.542,
+      "modifier": 6.698,
+      "place_of_service_code": 6.405,
+      "auth_status": 5.189,
+      "provider_specialty": 5.114,
+      "claim_amount_usd": 4.909,
+      "payer_type": 4.201,
+      "secondary_dx_count": 0.645
+    },
+    "n_features_full": 29,
+    "n_features_selected": 5
+  },
+  "overall_train_denial_rate": 0.2807462136084044,
+  "quantiles": {
+    "claim_amount_q25": 242.73,
+    "claim_amount_q50": 433.27,
+    "claim_amount_q75": 2556.86,
+    "documentation_completeness_q25": 0.58,
+    "documentation_completeness_q75": 0.88
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "total_claims": 120000,
+  "denied_claims": 33664,
+  "paid_claims": 62379,
+  "partial_pay_claims": 15469,
+  "pending_claims": 8488,
+  "unique_payers": 6,
+  "overall_denial_rate": 0.2805,
+  "overall_approval_rate": 0.6487,
+  "avg_claim_amount": 2223.58,
+  "avg_recovery_usd": 965.58,
+  "outcome_counts": {
+    "paid": 62379,
+    "denied": 33664,
+    "partial_pay": 15469,
+    "pending": 8488
+  },
+  "denial_category_counts": {
+    "medical_necessity": 9444,
+    "coding_error": 7344,
+    "auth_missing": 6140,
+    "eligibility": 4084,
+    "duplicate": 2645,
+    "timely_filing": 2315,
+    "bundling": 1692
+  },
+  "denial_code_counts": {
+    "CO-11": 4236,
+    "CO-16": 3928,
+    "CO-109": 3654,
+    "CO-97": 3214,
+    "CO-4": 2354,
+    "CO-119": 2354,
+    "CO-50": 2341,
+    "CO-29": 2315,
+    "PR-204": 2065,
+    "N-130": 2043,
+    "PR-27": 1429,
+    "CO-22": 1331,
+    "OA-18": 900,
+    "CO-18": 889,
+    "OA-23": 611
+  },
+  "payer_denial_rates": {
+    "Commercial_EPO": 0.28,
+    "Commercial_HMO": 0.28,
+    "Commercial_PPO": 0.28,
+    "Medicaid_Managed": 0.29,
+    "Medicare_Advantage": 0.28,
+    "Medicare_FFS": 0.28
+  },
+  "monthly_claims": {
+    "1": 11646,
+    "2": 10651,
+    "3": 11765,
+    "4": 11325,
+    "5": 11786,
+    "6": 11141,
+    "7": 8644,
+    "8": 8766,
+    "9": 8335,
+    "10": 8797,
+    "11": 8397,
+    "12": 8747
+  },
+  "monthly_denials": {
+    "1": 3247,
+    "2": 3021,
+    "3": 3254,
+    "4": 3220,
+    "5": 3296,
+    "6": 3049,
+    "7": 2490,
+    "8": 2513,
+    "9": 2307,
+    "10": 2447,
+    "11": 2364,
+    "12": 2456
+  },
+  "claim_amount_by_outcome": {
+    "denied": 2202.13,
+    "paid": 2229.2,
+    "partial_pay": 2255.85,
+    "pending": 2208.59
+  }
+}
