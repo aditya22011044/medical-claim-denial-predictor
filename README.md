@@ -309,16 +309,24 @@ claim-specific factors.
 The LLM interprets the combined ML predictions and historical payer statistics and returns a
 **structured JSON report**; it never computes or changes a model number.
 
-* **Provider:** any OpenAI-compatible endpoint via the official `openai` SDK.
-* **Model:** configurable through `LLM_MODEL` (default `gpt-4o-mini`).
-* **Keys:** an **ordered pool of up to 10** keys read from `OPENAI_API_KEY_1` … `OPENAI_API_KEY_10`.
-* **Rotation policy:** on authentication / permission / connection failures the next
-  configured key is tried. A **quota/billing** failure (`insufficient_quota` / "no credits
-  remaining") means the key can never serve a request, so the **next key is tried** — the
-  pool is walked in order until a working key is found. **Transient rate limits (HTTP 429)**
-  are handled on the *same* key using the `Retry-After` header and exponential back-off —
-  keys are **never** rotated to dodge a rate limit.
-* **Never shows an error:** if no key can serve the request, the **local rules-based advisor**
+* **Provider:** NVIDIA NIM — an OpenAI-compatible endpoint (`https://integrate.api.nvidia.com/v1`)
+  called through the official `openai` SDK.
+* **Key:** a single NVIDIA NIM key read from `NVIDIA_API_KEY` (never committed).
+* **Models (fallback chain):** an **ordered chain of models** (configurable via the
+  comma-separated `NVIDIA_MODELS` env var). The first model is tried first; if it cannot
+  serve the request the next model in the chain is tried, and so on. Built-in order:
+  `nvidia/nemotron-3.5-bolt-e4b`, `nvidia/nemotron-3.5-lightning-30b-a3b`,
+  `minimaxai/minimax-m3.1-flash`, `nvidia/nemotron-3-ultra-550b-a55b`,
+  `nvidia/nemotron-3.5-super-vl-120b-a12b`, `moonshotai/kimi-k3.1-pro`,
+  `mistralai/mistral-large-4-1t-a52b`, `stepfun-ai/step-5-preview`, `z-ai/glm-5.3-flash`.
+* **Fallback policy:** on authentication / permission / connection / timeout failures, or a
+  **quota/billing** failure (`insufficient_quota` / "no credits remaining"), the model is
+  treated as unavailable and the **next model in the chain is tried**. **Transient rate
+  limits (HTTP 429)** are handled on the *same* model using the `Retry-After` header and
+  exponential back-off before falling through. If a model rejects JSON mode or returns an
+  incomplete/malformed report, it is retried once without `response_format`, then skipped.
+* **Never shows an error:** if no model in the chain can serve the request, the **local
+  rules-based advisor**
   (`llm_service.build_fallback_report`) deterministically builds the *same* 8-section report
   from the ML predictions and payer statistics. The UI therefore **always** renders a complete
   recommendation, labelled `local-analyst (offline)`, with a friendly status message instead of
@@ -483,17 +491,14 @@ Configure the LLM keys (optional but required for recommendations):
 
 ```powershell
 copy .env.example .env
-# then edit .env and paste your OpenAI-compatible keys
+# then edit .env and paste your NVIDIA NIM API key
 ```
 
 `.env` example:
 
 ```
-OPENAI_API_KEY_1=sk-...
-OPENAI_API_KEY_2=
-...
-OPENAI_API_KEY_10=
-LLM_MODEL=gpt-4o-mini
+NVIDIA_API_KEY=nvapi-...
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
 `.env` is listed in `.gitignore`; `.env.example` contains placeholders only.

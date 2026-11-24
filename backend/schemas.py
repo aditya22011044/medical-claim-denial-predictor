@@ -144,7 +144,7 @@ class HealthResponse(BaseModel):
     models_loaded: dict
     llm_available: bool
     llm_model: Optional[str] = None
-    configured_keys: int
+    configured_models: int
     detail: Optional[str] = None
 
 

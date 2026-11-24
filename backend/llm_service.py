@@ -1,19 +1,21 @@
 """LLM service: turns ML predictions into a professional, structured recommendation.
 
-Key-rotation policy (exactly as required by the project brief):
+Model-fallback policy:
 
-* Keys are read from the environment, in order, ``OPENAI_API_KEY_1`` ... ``OPENAI_API_KEY_10``.
-* On an **authentication / permission / connection** failure the key is considered
-  unavailable and the next configured key is tried.
-* On a **quota / billing failure** (``insufficient_quota`` / "no credits remaining")
-  the key can never serve a request again, so it is treated as unavailable and the
-  next configured key is tried. This is not "rotating to dodge a rate limit" - a
-  key with no credits simply cannot answer.
-* On a **transient rate-limit (HTTP 429)** the *same* key is retried honouring the
-  ``Retry-After`` header and exponential back-off. Keys are **not** rotated to dodge
-  rate limits.
-* If every key fails, the LLM is gracefully disabled: ML predictions stay available and
-  the API returns a clear explanation instead of an exception.
+* A single NVIDIA NIM API key (``NVIDIA_API_KEY``) is used against the OpenAI-compatible
+  endpoint ``https://integrate.api.nvidia.com/v1``.
+* An **ordered chain of models** is configured in ``config.get_llm_targets()``. The head
+  of the chain is tried first; if it cannot serve the request the next model is tried,
+  and so on.
+* On an **authentication / permission / connection / timeout** failure, or a **quota /
+  billing failure** (``insufficient_quota`` / "no credits remaining"), the model is
+  treated as unavailable and the next model in the chain is tried.
+* On a **transient rate-limit (HTTP 429)** the *same* model is retried honouring the
+  ``Retry-After`` header and exponential back-off before falling through.
+* If a model does not support JSON mode or returns malformed JSON, the call is retried
+  once without ``response_format`` before falling through to the next model.
+* If every model fails, the LLM is gracefully disabled: ML predictions stay available
+  and the API returns a clear explanation instead of an exception.
 
 API keys are never logged and never returned to the client.
 """
@@ -101,11 +103,12 @@ VALID_RECOMMENDATIONS = {
 
 
 def llm_available() -> bool:
-    return len(config.get_api_keys()) > 0
+    return len(config.get_llm_targets()) > 0
 
 
 def configured_key_count() -> int:
-    return len(config.get_api_keys())
+    """Number of configured LLM call targets (models in the fallback chain)."""
+    return len(config.get_llm_targets())
 
 
 def _retry_after_seconds(exc: Exception) -> Optional[float]:
@@ -121,11 +124,48 @@ def _retry_after_seconds(exc: Exception) -> Optional[float]:
     return None
 
 
-def _make_client(key: str) -> OpenAI:
-    kwargs: dict[str, Any] = {"api_key": key, "timeout": config.LLM_TIMEOUT_SECONDS}
-    if config.OPENAI_BASE_URL:
-        kwargs["base_url"] = config.OPENAI_BASE_URL
-    return OpenAI(**kwargs)
+def _make_client(target: dict) -> OpenAI:
+    """Build an OpenAI-compatible client for one model-fallback target."""
+    return OpenAI(
+        api_key=target["api_key"],
+        base_url=target["base_url"],
+        timeout=config.LLM_TIMEOUT_SECONDS,
+        max_retries=0,  # we own the retry/fallback logic
+    )
+
+
+def _message_text(message: Any) -> str:
+    """Return the textual content of an assistant message.
+
+    Handles providers that return ``content`` as a list of parts, and reasoning
+    models that expose the answer through ``reasoning_content``.
+    """
+    content = getattr(message, "content", None)
+    if isinstance(content, list):
+        content = "".join(
+            part.get("text", "") for part in content if isinstance(part, dict))
+    if not content:
+        content = getattr(message, "reasoning_content", None)
+    return content or ""
+
+
+def _extract_json(text: str) -> dict:
+    """Parse a JSON object out of a possibly fenced / chatty model response."""
+    if not text or not text.strip():
+        raise json.JSONDecodeError("empty response", text or "", 0)
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        # drop the opening fence (e.g. ```json) and the closing fence
+        body = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+        if body.rstrip().endswith("```"):
+            body = body.rstrip()[:-3]
+        cleaned = body.strip()
+        if cleaned[:4].lower() == "json":
+            cleaned = cleaned[4:].lstrip()
+    start, end = cleaned.find("{"), cleaned.rfind("}")
+    if start == -1 or end <= start:
+        raise json.JSONDecodeError("no JSON object found", cleaned, 0)
+    return json.loads(cleaned[start:end + 1])
 
 
 def _validate_report(raw: dict) -> dict:
@@ -308,13 +348,15 @@ def build_fallback_report(payload: dict) -> dict:
 
 
 def generate_report(payload: dict) -> dict:
-    """Call the LLM and return a validated structured report.
+    """Call the first working model in the NVIDIA fallback chain.
 
-    Raises ``LLMUnavailable`` if no key can serve the request.
+    Models are tried in the configured order; a model is skipped on an
+    authentication / permission / connection / quota failure or on malformed output.
+    Raises ``LLMUnavailable`` only when every model in the chain fails.
     """
-    keys = config.get_api_keys()
-    if not keys:
-        raise LLMUnavailable("No LLM API keys are configured (OPENAI_API_KEY_1..10).")
+    targets = config.get_llm_targets()
+    if not targets:
+        raise LLMUnavailable("No LLM API key is configured (NVIDIA_API_KEY).")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -322,71 +364,80 @@ def generate_report(payload: dict) -> dict:
     ]
     failures: list[str] = []
 
-    for index, key in enumerate(keys, start=1):
-        client = _make_client(key)
+    for index, target in enumerate(targets, start=1):
+        model = target["model"]
+        client = _make_client(target)
+        use_json_mode = True   # retried once without it if the model rejects it
         attempt = 0
         while True:
             try:
-                response = client.chat.completions.create(
-                    model=config.LLM_MODEL,
-                    messages=messages,
-                    temperature=0.2,
-                    response_format={"type": "json_object"},
-                )
-                content = response.choices[0].message.content
-                report = _validate_report(json.loads(content))
-                return {"model": response.model, "report": report}
+                kwargs: dict[str, Any] = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.2,
+                    "max_tokens": 4096,
+                }
+                if use_json_mode:
+                    kwargs["response_format"] = {"type": "json_object"}
+                response = client.chat.completions.create(**kwargs)
+                text = _message_text(response.choices[0].message)
+                raw = _extract_json(text)
+                # A valid JSON payload that is missing the report body is useless -
+                # treat it as a failure so the next model in the chain is tried.
+                if not isinstance(raw, dict) or not str(raw.get("executive_summary") or "").strip():
+                    raise ValueError("incomplete report")
+                report = _validate_report(raw)
+                return {"model": response.model or model, "report": report}
 
             except RateLimitError as exc:
-                text = str(exc)
-                low = text.lower()
-                # A quota / billing failure is permanent for THIS key - it can never
-                # serve a request again. Treat it as an unavailable key and fall through
-                # to the next configured key (the whole point of the key pool). This is
-                # NOT "rotating to bypass a rate limit": a key with no credits cannot
-                # serve the request at all, so trying the next key is the only option.
+                low = str(exc).lower()
+                # A quota / billing failure is permanent for this model - fall through
+                # to the next model in the chain (the whole point of the fallback).
                 if "insufficient_quota" in low or "no credits" in low or "exceeded your current quota" in low:
-                    failures.append(f"key #{index}: quota/credits exhausted")
-                    break  # try the next configured key
-                # Otherwise it is a transient rate limit: back off on the SAME key
-                # (keys are never rotated to bypass a rate limit).
+                    failures.append(f"model #{index} ({model}): quota/credits exhausted")
+                    break
+                # Transient rate limit: back off on the SAME model before falling through.
                 wait = _retry_after_seconds(exc) or min(2 ** attempt, 30)
                 if attempt >= config.LLM_MAX_RETRIES:
-                    raise LLMUnavailable(
-                        f"Rate limit reached and not resolved after {attempt} retries "
-                        f"(new keys are not rotated to bypass rate limits). "
-                        f"Please retry later. Details: {exc}")
+                    failures.append(f"model #{index} ({model}): rate limited after {attempt} retries")
+                    break
                 time.sleep(wait)
                 attempt += 1
 
-            except (AuthenticationError, PermissionError) as exc:
-                failures.append(f"key #{index}: authentication failed")
-                break  # try the next configured key
+            except (AuthenticationError, PermissionError):
+                failures.append(f"model #{index} ({model}): authentication failed")
+                break
 
-            except (APIConnectionError, APITimeoutError) as exc:
+            except APITimeoutError:
+                # A slow model is not worth retrying - fall through quickly.
+                failures.append(f"model #{index} ({model}): request timed out")
+                break
+
+            except APIConnectionError:
                 attempt += 1
                 if attempt > config.LLM_MAX_RETRIES:
-                    failures.append(f"key #{index}: connection error")
-                    break  # try the next configured key
+                    failures.append(f"model #{index} ({model}): connection error")
+                    break
                 time.sleep(min(2 ** attempt, 10))
 
             except APIStatusError as exc:
-                if exc.status_code in (401, 403):
-                    failures.append(f"key #{index}: HTTP {exc.status_code}")
-                    break  # key unavailable -> rotate
-                failures.append(f"key #{index}: HTTP {exc.status_code}")
+                text = str(exc).lower()
+                # Some models reject response_format -> retry once without JSON mode.
+                if use_json_mode and exc.status_code in (400, 404, 422) and "response_format" in text:
+                    use_json_mode = False
+                    continue
+                failures.append(f"model #{index} ({model}): HTTP {exc.status_code}")
                 break
 
-            except json.JSONDecodeError:
-                failures.append(f"key #{index}: model returned invalid JSON")
+            except (json.JSONDecodeError, ValueError):
+                # Malformed / empty output: retry once without JSON mode, then fall through.
+                if use_json_mode:
+                    use_json_mode = False
+                    continue
+                failures.append(f"model #{index} ({model}): returned invalid JSON")
                 break
 
-    tried = len(keys)
-    if failures and all("quota" in f for f in failures):
-        raise LLMUnavailable(
-            f"All {tried} configured LLM keys are out of credits (quota exhausted). "
-            "ML predictions remain fully available - add credits to at least one key to "
-            "enable AI recommendations. Tried: " + "; ".join(failures))
+    tried = len(targets)
     raise LLMUnavailable(
-        f"All {tried} configured LLM keys failed. ML predictions remain fully available. "
-        "Tried: " + "; ".join(failures))
+        f"All {tried} NVIDIA models in the fallback chain failed. "
+        "ML predictions remain fully available. Tried: " + "; ".join(failures))

@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     if art.errors:
         for err in art.errors:
             logger.warning("Artifact warning: %s", err)
-    logger.info("LLM available: %s (model=%s, keys=%d)",
+    logger.info("LLM available: %s (primary model=%s, chain=%d models)",
                 llm_service.llm_available(), config.LLM_MODEL, llm_service.configured_key_count())
     yield
 
@@ -97,7 +97,7 @@ def health():
         models_loaded=loaded,
         llm_available=llm_service.llm_available(),
         llm_model=config.LLM_MODEL if llm_service.llm_available() else None,
-        configured_keys=llm_service.configured_key_count(),
+        configured_models=llm_service.configured_key_count(),
         detail=None if all(loaded.values()) else "One or more models failed to load.",
     )
 

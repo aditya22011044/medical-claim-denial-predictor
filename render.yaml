@@ -11,9 +11,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.3
-      - key: LLM_MODEL
-        value: gpt-4o-mini
-      # Optional: paste an OpenAI-compatible key during setup to enable LLM
-      # recommendations. Leave empty to use the built-in offline advisor.
-      - key: OPENAI_API_KEY_1
+      - key: NVIDIA_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      # Paste your NVIDIA NIM API key during setup to enable LLM recommendations.
+      # Leave empty to use the built-in offline advisor.
+      - key: NVIDIA_API_KEY
         sync: false
