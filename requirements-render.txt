@@ -1,0 +1,18 @@
+# Slim runtime requirements for deploying the FastAPI backend on Render.
+# Excludes notebook/analysis-only packages (jupyter, matplotlib, seaborn, plotly).
+# Versions are pinned to match the environment the models were trained in.
+
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.4
+python-dotenv==1.2.4
+openai==3.57.0
+requests==2.34.2
+
+# ML runtime (needed to unpickle and run the saved pipelines)
+joblib==1.6.0
+numpy==2.2.4
+pandas==2.2.3
+scipy==1.18.1
+scikit-learn==1.9.1
+xgboost==3.4.1
