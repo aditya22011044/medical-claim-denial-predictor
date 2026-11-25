@@ -20,8 +20,6 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const fmtUSD = (v) =>
   v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
-const fmtUSD2 = (v) =>
-  v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (v, d = 1) => (v == null ? '—' : (Number(v) * 100).toFixed(d) + '%');
 const fmtNum = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US'));
 const titleCase = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -445,8 +443,6 @@ function aiReport(rec) {
 /* ============================================================
    Dashboard
    ============================================================ */
-const PALETTE = ['#6366f1', '#22d3ee', '#34d399', '#fbbf24', '#fb7185', '#a78bfa', '#f472b6'];
-
 function renderDashboard() {
   const d = state.dashboard;
   if (!d) return;

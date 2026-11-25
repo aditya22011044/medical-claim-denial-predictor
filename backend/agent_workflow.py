@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from . import llm_service, prediction_service
-from .prediction_service import available_payers, payer_intelligence, predict_claim
+from .prediction_service import payer_intelligence, predict_claim
 from .schemas import ClaimInput, PayerIntelligence
 
 

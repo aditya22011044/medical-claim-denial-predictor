@@ -19,7 +19,6 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 MODELS_DIR = PROJECT_ROOT / "models"
-REPORTS_DIR = PROJECT_ROOT / "reports"
 FRONTEND_DIR = PROJECT_ROOT / "frontend" / "static"
 
 # Load the .env file that sits in the project root (if it exists).

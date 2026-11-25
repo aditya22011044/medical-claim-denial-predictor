@@ -29,14 +29,8 @@ class Artifacts:
     def __init__(self) -> None:
         self.models: dict[str, Any] = {}
         self.metadata: dict[str, Any] = {}
-        # full feature space (for reference / docs)
-        self.features: list[str] = []
-        self.categorical: list[str] = []
-        self.numeric: list[str] = []
         # the selected top-5 feature space actually fed to the models
         self.selected_features: list[str] = []
-        self.selected_categorical: list[str] = []
-        self.selected_numeric: list[str] = []
         self.feature_selection: dict[str, Any] = {}
         self.payer_lookup: pd.DataFrame = pd.DataFrame()
         self.payer_rules: pd.DataFrame = pd.DataFrame()
@@ -56,12 +50,7 @@ def get_artifacts() -> Artifacts:
     try:
         with open(config.FEATURE_COLUMNS_FILE, encoding="utf-8") as fh:
             cols = json.load(fh)
-        art.features = cols["features"]
-        art.categorical = cols["categorical"]
-        art.numeric = cols["numeric"]
         art.selected_features = cols["selected_features"]
-        art.selected_categorical = cols["selected_categorical"]
-        art.selected_numeric = cols["selected_numeric"]
         art.feature_selection = cols.get("feature_selection", {})
         art.quantiles = cols.get("quantiles", {})
     except Exception as exc:  # pragma: no cover
@@ -134,11 +123,6 @@ def _risk_level(prob: float) -> str:
     if prob <= high:
         return "Medium"
     return "High"
-
-
-def _py(value: Any) -> Any:
-    """Convert numpy scalars to native Python types so the API can serialise them."""
-    return value.item() if isinstance(value, np.generic) else value
 
 
 def _risk_factors(claim: ClaimInput) -> list[RiskFactor]:
